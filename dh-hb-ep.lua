@@ -1,100 +1,98 @@
-local notificationLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/laagginq/ui-libraries/main/xaxas-notification/src.lua"))();
-local notifications = notificationLibrary.new({            
-    NotificationLifetime = 10, 
-    NotificationPosition = "Middle",
-    
-    TextFont = Enum.Font.Code,
-    TextColor = Color3.fromRGB(255, 0, 0),
-    TextSize = 15,
-    
-    TextStrokeTransparency = 0, 
-    TextStrokeColor = Color3.fromRGB(0, 0, 0)
-});
-
-notifications:BuildNotificationUI();
-notifications:Notify("This script was created by @lastwordsb4death on YouTube!");
-print('This script was created by stophurtsme on Discord or @lastwordsb4death on YouTube!')
-print("Accept the risk that you're might get banned.")
-
-if game.PlaceId ~= 2788229376 then
+-- // Ensure is Da Hood (put in autoexec)
+if (game.PlaceId ~= 2788229376) then
     return
 end
+
+-- // Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 
+-- // Vars
 local tablefind = table.find
-local MainEvent = ReplicatedStorage:WaitForChild("MainEvent")
-local originalSizes = {}
+local MainEvent = ReplicatedStorage.MainEvent
 
+-- // Configuration
 local Flags = {
     "CHECKER_1",
     "TeleportDetect",
-    "OneMoreTime",
-    "PERMA_BAN",
-    "KICK_USER"
+    "OneMoreTime"
 }
 
-local hitboxSize = Vector3.new(20, 20, 20) -- Size for hitbox expansion (HumanoidRootPart)
-local hitboxTransparency = 0.9 -- Transparency for hitbox parts
-local hitboxColor = Color3.new(1, 0, 0) -- Red color for hitbox
+-- // __namecall hook
+local __namecall
+__namecall = hookmetamethod(game, "__namecall", function(...)
+    -- // Vars
+    local args = {...}
+    local self = args[1]
+    local method = getnamecallmethod()
 
-local excludedPlayers = {
-    "PlayerName1",  -- Replace with the actual player names or UserIds
-    "PlayerName2"
+    -- // See if the game is trying to alert the server
+    if (method == "FireServer" and self == MainEvent and tablefind(Flags, args[2])) then
+        return
+    end
+
+    -- // Anti Crash
+    if (not checkcaller() and getfenv(2).crash) then
+        -- // Set the crash function (hooking can cause stutters)
+        local fenv = getfenv(2)
+        fenv.crash = function() end
+        setfenv(2, fenv)
+    end
+
+    -- //
+    return __namecall(...)
+end)
+
+-- // __newindex hook (stops game from setting ws/jp)
+local __newindex
+__newindex = hookmetamethod(game, "__newindex", function(t, k, v)
+    -- // Make sure it's trying to set our humanoid's ws/jp
+    if (not checkcaller() and t:IsA("Humanoid") and (k == "WalkSpeed" or k == "JumpPower")) then
+        -- // Disallow the set
+        return
+    end
+
+    -- //
+    return __newindex(t, k, v)
+end)
+
+-- Hitbox Expander Script
+getgenv().settings = {
+    Size = Vector3.new(5, 5, 5), -- Default hitbox size
+    Color = Color3.fromRGB(255, 0, 0), -- Red hitbox
+    Transparency = 0.5 -- Semi-transparent
 }
 
-local function isPlayerExcluded(player)
-    return tablefind(excludedPlayers, player.Name) ~= nil
-end
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
 local function expandHitbox(character)
-    if not character or not character:IsA("Model") then return end
-
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if humanoidRootPart and humanoidRootPart:IsA("BasePart") then
-        if character.Parent == LocalPlayer.Character then
-            return
-        end
-        if not originalSizes[humanoidRootPart] then
-            originalSizes[humanoidRootPart] = {
-                Size = humanoidRootPart.Size,
-                Transparency = humanoidRootPart.Transparency,
-                Color = humanoidRootPart.Color
-            }
-        end
-        if not isPlayerExcluded(Players:GetPlayerFromCharacter(character)) then
-            humanoidRootPart.Size = hitboxSize
-            humanoidRootPart.Transparency = hitboxTransparency
-            humanoidRootPart.Color = hitboxColor
-            humanoidRootPart.CanCollide = false -- Prevent freezing
-        end
-    else
-        warn("HumanoidRootPart not found for " .. character.Name) -- Debugging
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.Size = getgenv().settings.Size
+        hrp.Transparency = getgenv().settings.Transparency
+        hrp.BrickColor = BrickColor.new(getgenv().settings.Color)
+        hrp.Material = Enum.Material.ForceField
     end
 end
+
 local function resetHitbox(character)
-    if not character or not character:IsA("Model") then return end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.Size = Vector3.new(2, 2, 1)
+        hrp.Transparency = 0
+        hrp.BrickColor = BrickColor.new("White")
+        hrp.Material = Enum.Material.Plastic
+    end
+end
 
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if humanoidRootPart and humanoidRootPart:IsA("BasePart") and originalSizes[humanoidRootPart] then
-        if not isPlayerExcluded(Players:GetPlayerFromCharacter(character)) then
-            humanoidRootPart.Size = originalSizes[humanoidRootPart].Size
-            humanoidRootPart.Transparency = originalSizes[humanoidRootPart].Transparency
-            humanoidRootPart.Color = originalSizes[humanoidRootPart].Color
+local function expandAllHitboxes()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            expandHitbox(player.Character)
         end
-        originalSizes[humanoidRootPart] = nil
     end
 end
-local function expandHitboxesForAllPlayers()
-    while true do
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                expandHitbox(player.Character)
-            end
-        end
-        wait(3)
-    end
-end
+
 Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function(character)
         -- Retry expanding hitbox immediately after respawn
@@ -103,20 +101,17 @@ Players.PlayerAdded:Connect(function(player)
         end
     end)
 end)
+
 Players.PlayerRemoving:Connect(function(player)
     if player.Character and player ~= LocalPlayer then
         resetHitbox(player.Character)
     end
 end)
-if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-    LocalPlayer.Character:WaitForChild("Humanoid")
-    LocalPlayer.Character.Humanoid.WalkSpeed = 16
-    LocalPlayer.Character.Humanoid.JumpPower = 50
+
+-- Run the script every 3 seconds to apply hitbox expansion
+while true do
+    expandAllHitboxes()
+    wait(3)
 end
-LocalPlayer.CharacterAdded:Connect(function(character)
-    if character:FindFirstChildOfClass("Humanoid") then
-        character.Humanoid.WalkSpeed = 16
-        character.Humanoid.JumpPower = 50
-    end
-end)
-expandHitboxesForAllPlayers()
+
+print("Hitbox expander activated!")
