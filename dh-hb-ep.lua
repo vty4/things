@@ -35,6 +35,10 @@ local Flags = {
     "KICK_USER"
 }
 
+local hitboxSize = Vector3.new(20, 20, 20) -- Size for hitbox expansion (HumanoidRootPart)
+local hitboxTransparency = 0.9 -- Transparency for hitbox parts
+local hitboxColor = Color3.new(1, 0, 0) -- Red color for hitbox
+
 local excludedPlayers = {
     "PlayerName1",  -- Replace with the actual player names or UserIds
     "PlayerName2"
@@ -59,9 +63,9 @@ local function expandHitbox(character)
             }
         end
         if not isPlayerExcluded(Players:GetPlayerFromCharacter(character)) then
-            humanoidRootPart.Size = _G.Settings.hitboxSize
-            humanoidRootPart.Transparency = _G.Settings.hitboxTransparency
-            humanoidRootPart.Color = _G.Settings.hitboxColor
+            humanoidRootPart.Size = hitboxSize
+            humanoidRootPart.Transparency = hitboxTransparency
+            humanoidRootPart.Color = hitboxColor
             humanoidRootPart.CanCollide = false -- Prevent freezing
         end
     else
