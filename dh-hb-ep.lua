@@ -59,9 +59,9 @@ local function expandHitbox(character)
             }
         end
         if not isPlayerExcluded(Players:GetPlayerFromCharacter(character)) then
-            humanoidRootPart.Size = hitboxSize
-            humanoidRootPart.Transparency = hitboxTransparency
-            humanoidRootPart.Color = hitboxColor
+            humanoidRootPart.Size = _G.Settings.hitboxSize
+            humanoidRootPart.Transparency = _G.Settings.hitboxTransparency
+            humanoidRootPart.Color = _G.Settings.hitboxColor
             humanoidRootPart.CanCollide = false -- Prevent freezing
         end
     else
